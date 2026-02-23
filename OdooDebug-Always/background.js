@@ -24,12 +24,27 @@ class onClickListener {
 
 let debugMode = '';
 let odooVersion = 'legacy';
+const disabledAutoDebugByTab = new Map();
+
+const getPageKey = (url) => `${url.origin}${url.pathname}`;
+
+const shouldSkipAutoDebug = (tab) => {
+    try {
+        const currentTabUrl = new URL(tab.url);
+        return disabledAutoDebugByTab.get(tab.id) === getPageKey(currentTabUrl);
+    } catch (e) {
+        return false;
+    }
+};
 
 // Auto-enable normal debug mode (debug=1) when an Odoo page is detected.
 // This keeps the existing click behaviour (single click toggles, double click assets)
 // but removes the need to click on every navigation.
 const ensureAutoDebug = (tab) => {
     try {
+        if (shouldSkipAutoDebug(tab)) {
+            return;
+        }
         const tabUrl = new URL(tab.url);
         const params = new URLSearchParams(tabUrl.search);
         const current = params.get('debug');
@@ -56,9 +71,17 @@ const onClickActivateDebugMode = (tab, click) => {
         const selectedMode = debugMode && click === 1 ? 0 : click;
         const tabUrl = new URL(tab.url);
         const [debugOption, path] = debugOptions[selectedMode];
+        const pageKey = getPageKey(tabUrl);
         const params = new URLSearchParams(tabUrl.search);
         params.set('debug', debugOption);
         const url = tabUrl.origin + tabUrl.pathname + `?${params.toString()}` + tabUrl.hash;
+
+        if (selectedMode === 0) {
+            disabledAutoDebugByTab.set(tab.id, pageKey);
+        } else {
+            disabledAutoDebugByTab.delete(tab.id);
+        }
+
         browserAction.setIcon({ path });
         chrome.tabs.update(tab.id, { url });
     }
@@ -96,3 +119,6 @@ browserAction.onClicked.addListener(new onClickListener((tab, click) => onClickA
 chrome.tabs.onActivated.addListener(adaptIcon);
 chrome.tabs.onUpdated.addListener(adaptIcon);
 chrome.windows.onFocusChanged.addListener(adaptIcon);
+chrome.tabs.onRemoved.addListener((tabId) => {
+    disabledAutoDebugByTab.delete(tabId);
+});
