@@ -1,4 +1,5 @@
 {
+    "_readme": "README.md must be updated whenever behaviour, files, or the detection flow changes.",
     "manifest_version": 3,
     "name": "Odoo Debug - Always",
     "version": "5.0",
