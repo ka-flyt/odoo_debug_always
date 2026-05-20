@@ -1,4 +1,4 @@
-const browserAction = typeof browser == 'object' ? chrome.browserAction : chrome.action; // Browser compatibility
+const browserAction = chrome.action || chrome.browserAction;
 
 class onClickListener {
     constructor(callback) {
