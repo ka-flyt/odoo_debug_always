@@ -14,6 +14,7 @@ window.addEventListener('message', (event) => {
         message: 'odooDetected',
         odooVersion: event.data.odooVersion,
         debugMode: event.data.debugMode,
+        isInternalUser: event.data.isInternalUser,
     });
 });
 
@@ -24,6 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({
                 odooVersion: body.getAttribute('data-odoo'),
                 debugMode: body.getAttribute('data-odoo-debug-mode'),
+                isInternalUser: body.getAttribute('data-odoo-internal-user') !== '0',
             });
         } else {
             sendResponse({ odooVersion: false });

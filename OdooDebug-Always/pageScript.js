@@ -15,11 +15,22 @@ const detectOdoo = (retries) => {
             debugMode = odoo.debug;
         }
         debugMode = debugMode === '0' ? '' : debugMode;  // In Firefox Odoo add '0' for no debug instead of empty string ''.
+
+        // Detect whether the current user is an internal Odoo user.
+        // window.__session_info__ is server-rendered into the page HTML before any app JS loads.
+        // window.odoo.session_info is a fallback for versions that expose it differently.
+        // Default to true if unavailable (legacy Odoo) to preserve existing auto-debug behaviour.
+        const sessionInfo = window.__session_info__
+            || (window.odoo && window.odoo.session_info)
+            || null;
+        const isInternalUser = sessionInfo ? sessionInfo.is_internal_user === true : true;
+
         body.setAttribute('data-odoo', odooVersion);
         body.setAttribute('data-odoo-debug-mode', debugMode);
+        body.setAttribute('data-odoo-internal-user', isInternalUser ? '1' : '0');
         // Push detection result to contentScript so background.js acts immediately,
         // instead of relying on the polling adaptIcon() which runs before this point.
-        window.postMessage({ type: 'odoo-debug-detected', odooVersion, debugMode }, '*');
+        window.postMessage({ type: 'odoo-debug-detected', odooVersion, debugMode, isInternalUser }, '*');
     } else if (retries > 0) {
         setTimeout(() => detectOdoo(retries - 1), 150);
     }

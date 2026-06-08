@@ -94,9 +94,8 @@ const adaptIcon = () => {
                 }
                 let path = '/images/icons/off_48.png';
                 if (response.odooVersion) {
-                    // If it's an Odoo page and we're not in debug, auto-enable debug=1.
-                    // (We do this before setting the icon so the next onUpdated will refresh state.)
-                    if (response.debugMode !== '1' && response.debugMode !== 'assets') {
+                    // If it's an Odoo page, not in debug, and user is internal: auto-enable debug=1.
+                    if (response.debugMode !== '1' && response.debugMode !== 'assets' && response.isInternalUser) {
                         ensureAutoDebug(tabs[0]);
                     }
                     if (response.debugMode === 'assets') {
@@ -122,7 +121,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
         const tab = sender.tab;
         odooVersion = request.odooVersion;
         debugMode = request.debugMode;
-        if (request.debugMode !== '1' && request.debugMode !== 'assets') {
+        if (request.debugMode !== '1' && request.debugMode !== 'assets' && request.isInternalUser) {
             ensureAutoDebug(tab);
         }
         let path = '/images/icons/off_48.png';

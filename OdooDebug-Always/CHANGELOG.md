@@ -5,6 +5,23 @@
 
 ---
 
+## [5.4] – 2026-06-08
+
+### Changed
+- **Auto-debug only activates for internal Odoo users** — Previously, auto-debug triggered on any Odoo page regardless of user type. Now it only activates when the logged-in user is an internal user (`is_internal_user: true` in Odoo session info). Public users and portal users visiting a foreign Odoo site will not get auto-debug.
+
+**How it works:** `pageScript.js` reads `window.__session_info__.is_internal_user` (server-rendered into the page HTML by Odoo before any app JS loads). Falls back to `window.odoo.session_info.is_internal_user`. Defaults to `true` if neither is available (legacy Odoo), preserving existing behaviour.
+
+**Files changed:**
+- `pageScript.js` — reads `is_internal_user` from session info, sets `data-odoo-internal-user` attribute, includes in postMessage
+- `contentScript.js` — forwards `isInternalUser` in both the push message and the `getOdooDebugInfo` poll response
+- `background.js` — gates `ensureAutoDebug()` on `isInternalUser` in both the push handler and `adaptIcon()`
+
+### Changed
+- **Description updated** — Added GitHub repo link to extension description in both manifests.
+
+---
+
 ## [5.3] – 2026-06-08
 
 ### Fixed
