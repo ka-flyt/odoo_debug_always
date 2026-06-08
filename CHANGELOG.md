@@ -5,6 +5,20 @@
 
 ---
 
+## [5.2] – 2026-06-08
+
+### Changed
+- **Disabling debug now persists across navigation within the same tab** — Previously, clicking the icon to turn off debug only suppressed auto-debug for the current page (URL + path). Clicking any link would re-enable debug on the next page. Now, once you disable debug on a tab, it stays off for all pages in that tab until you manually re-enable it.
+
+**Root cause:** `disabledAutoDebugByTab` was a `Map` storing `tab.id → pageKey` (origin + pathname). `shouldSkipAutoDebug` only matched if the current URL matched the stored key, so navigating to a new page cleared the suppression.
+
+**Fix:** Changed `disabledAutoDebugByTab` from a `Map` to a `Set` storing only `tab.id`. Suppression now applies to the entire tab session, regardless of which page is loaded.
+
+**Files changed:**
+- `background.js` — `disabledAutoDebugByTab` changed from `Map` to `Set`; removed `getPageKey()`; `shouldSkipAutoDebug` simplified to `Set.has(tab.id)`
+
+---
+
 ## [5.1] – 2026-06-08
 
 ### Fixed

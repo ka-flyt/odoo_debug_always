@@ -24,18 +24,12 @@ class onClickListener {
 
 let debugMode = '';
 let odooVersion = 'legacy';
-const disabledAutoDebugByTab = new Map();
+// Tracks tabs where the user has manually disabled auto-debug.
+// Stored per tab (not per page), so debug stays off across all navigation
+// within the same tab until the user manually re-enables it.
+const disabledAutoDebugByTab = new Set();
 
-const getPageKey = (url) => `${url.origin}${url.pathname}`;
-
-const shouldSkipAutoDebug = (tab) => {
-    try {
-        const currentTabUrl = new URL(tab.url);
-        return disabledAutoDebugByTab.get(tab.id) === getPageKey(currentTabUrl);
-    } catch (e) {
-        return false;
-    }
-};
+const shouldSkipAutoDebug = (tab) => disabledAutoDebugByTab.has(tab.id);
 
 // Auto-enable normal debug mode (debug=1) when an Odoo page is detected.
 // This keeps the existing click behaviour (single click toggles, double click assets)
@@ -71,13 +65,12 @@ const onClickActivateDebugMode = (tab, click) => {
         const selectedMode = debugMode && click === 1 ? 0 : click;
         const tabUrl = new URL(tab.url);
         const [debugOption, path] = debugOptions[selectedMode];
-        const pageKey = getPageKey(tabUrl);
         const params = new URLSearchParams(tabUrl.search);
         params.set('debug', debugOption);
         const url = tabUrl.origin + tabUrl.pathname + `?${params.toString()}` + tabUrl.hash;
 
         if (selectedMode === 0) {
-            disabledAutoDebugByTab.set(tab.id, pageKey);
+            disabledAutoDebugByTab.add(tab.id);
         } else {
             disabledAutoDebugByTab.delete(tab.id);
         }
