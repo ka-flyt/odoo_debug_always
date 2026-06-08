@@ -24,18 +24,12 @@ class onClickListener {
 
 let debugMode = '';
 let odooVersion = 'legacy';
-const disabledAutoDebugByTab = new Map();
+// Tracks tabs where the user has manually disabled auto-debug.
+// Stored per tab (not per page), so debug stays off across all navigation
+// within the same tab until the user manually re-enables it.
+const disabledAutoDebugByTab = new Set();
 
-const getPageKey = (url) => `${url.origin}${url.pathname}`;
-
-const shouldSkipAutoDebug = (tab) => {
-    try {
-        const currentTabUrl = new URL(tab.url);
-        return disabledAutoDebugByTab.get(tab.id) === getPageKey(currentTabUrl);
-    } catch (e) {
-        return false;
-    }
-};
+const shouldSkipAutoDebug = (tab) => disabledAutoDebugByTab.has(tab.id);
 
 // Auto-enable normal debug mode (debug=1) when an Odoo page is detected.
 // This keeps the existing click behaviour (single click toggles, double click assets)
@@ -64,20 +58,24 @@ const ensureAutoDebug = (tab) => {
 const onClickActivateDebugMode = (tab, click) => {
     if (click <= 2) {
         const debugOptions = {
-            0: [odooVersion === 'legacy' ? '' : '0', '/images/icons/off_48.png'],
+            0: [null, '/images/icons/off_48.png'],
             1: ['1', '/images/icons/on_48.png'],
             2: ['assets', '/images/icons/super_48.png'],
         };
         const selectedMode = debugMode && click === 1 ? 0 : click;
         const tabUrl = new URL(tab.url);
         const [debugOption, path] = debugOptions[selectedMode];
-        const pageKey = getPageKey(tabUrl);
         const params = new URLSearchParams(tabUrl.search);
-        params.set('debug', debugOption);
-        const url = tabUrl.origin + tabUrl.pathname + `?${params.toString()}` + tabUrl.hash;
+        if (debugOption === null) {
+            params.delete('debug');
+        } else {
+            params.set('debug', debugOption);
+        }
+        const paramStr = params.toString();
+        const url = tabUrl.origin + tabUrl.pathname + (paramStr ? `?${paramStr}` : '') + tabUrl.hash;
 
         if (selectedMode === 0) {
-            disabledAutoDebugByTab.set(tab.id, pageKey);
+            disabledAutoDebugByTab.add(tab.id);
         } else {
             disabledAutoDebugByTab.delete(tab.id);
         }
@@ -96,9 +94,8 @@ const adaptIcon = () => {
                 }
                 let path = '/images/icons/off_48.png';
                 if (response.odooVersion) {
-                    // If it's an Odoo page and we're not in debug, auto-enable debug=1.
-                    // (We do this before setting the icon so the next onUpdated will refresh state.)
-                    if (response.debugMode !== '1' && response.debugMode !== 'assets') {
+                    // If it's an Odoo page, not in debug, and user is internal: auto-enable debug=1.
+                    if (response.debugMode !== '1' && response.debugMode !== 'assets' && response.isInternalUser) {
                         ensureAutoDebug(tabs[0]);
                     }
                     if (response.debugMode === 'assets') {
@@ -109,11 +106,33 @@ const adaptIcon = () => {
                     odooVersion = response.odooVersion;
                     debugMode = response.debugMode;
                 }
-                browserAction.setIcon({ path });
+                browserAction.setIcon({ path, tabId: tabs[0].id });
             });
         }
     });
 }
+
+// Push-based detection: pageScript.js notifies us when Odoo is found on the page.
+// This is the primary trigger for auto-debug. The polling in adaptIcon() is kept
+// as a fallback for tab switches and window focus changes, but auto-debug now
+// relies on this message rather than on the race-prone onUpdated timing.
+chrome.runtime.onMessage.addListener((request, sender) => {
+    if (request.message === 'odooDetected' && sender.tab) {
+        const tab = sender.tab;
+        odooVersion = request.odooVersion;
+        debugMode = request.debugMode;
+        if (request.debugMode !== '1' && request.debugMode !== 'assets' && request.isInternalUser) {
+            ensureAutoDebug(tab);
+        }
+        let path = '/images/icons/off_48.png';
+        if (request.debugMode === 'assets') {
+            path = '/images/icons/super_48.png';
+        } else if (request.debugMode === '1') {
+            path = '/images/icons/on_48.png';
+        }
+        browserAction.setIcon({ path, tabId: tab.id });
+    }
+});
 
 browserAction.onClicked.addListener(new onClickListener((tab, click) => onClickActivateDebugMode(tab, click)));
 chrome.tabs.onActivated.addListener(adaptIcon);
