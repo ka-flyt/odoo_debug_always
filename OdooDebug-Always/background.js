@@ -58,7 +58,7 @@ const ensureAutoDebug = (tab) => {
 const onClickActivateDebugMode = (tab, click) => {
     if (click <= 2) {
         const debugOptions = {
-            0: [odooVersion === 'legacy' ? '' : '0', '/images/icons/off_48.png'],
+            0: [null, '/images/icons/off_48.png'],
             1: ['1', '/images/icons/on_48.png'],
             2: ['assets', '/images/icons/super_48.png'],
         };
@@ -66,8 +66,13 @@ const onClickActivateDebugMode = (tab, click) => {
         const tabUrl = new URL(tab.url);
         const [debugOption, path] = debugOptions[selectedMode];
         const params = new URLSearchParams(tabUrl.search);
-        params.set('debug', debugOption);
-        const url = tabUrl.origin + tabUrl.pathname + `?${params.toString()}` + tabUrl.hash;
+        if (debugOption === null) {
+            params.delete('debug');
+        } else {
+            params.set('debug', debugOption);
+        }
+        const paramStr = params.toString();
+        const url = tabUrl.origin + tabUrl.pathname + (paramStr ? `?${paramStr}` : '') + tabUrl.hash;
 
         if (selectedMode === 0) {
             disabledAutoDebugByTab.add(tab.id);

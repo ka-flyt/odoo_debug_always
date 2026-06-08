@@ -5,6 +5,16 @@
 
 ---
 
+## [5.3] – 2026-06-08
+
+### Fixed
+- **`debug=` no longer left in the URL when debug is disabled** — Turning off debug previously set `debug=` (legacy) or `debug=0` (modern) in the URL. Now the `debug` parameter is removed entirely, leaving a clean URL. If all other params are also absent, the trailing `?` is removed too.
+
+**Files changed:**
+- `background.js` — `debugOptions[0]` changed from `''`/`'0'` to `null`; URL construction now uses `params.delete('debug')` and omits `?` when no params remain
+
+---
+
 ## [5.2] – 2026-06-08
 
 ### Changed
