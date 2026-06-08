@@ -8,25 +8,36 @@ A Chrome/Edge extension that automatically enables Odoo debug mode (`?debug=1`) 
 
 ### Detection flow
 
+Detection is **push-based**: `pageScript.js` notifies the background as soon as Odoo is confirmed, rather than the background polling at a fixed point in the page lifecycle (which was unreliable because Odoo 17+ loads JS as ES modules that execute late).
+
 ```
 Tab navigates
      │
      ▼
 contentScript.js  ──injects──▶  pageScript.js  (runs in page context)
                                       │
-                                 Checks window.odoo.debug
+                                 Retries until window.odoo is ready
+                                 Reads window.odoo.debug
                                  Sets body[data-odoo] and
                                  body[data-odoo-debug-mode]
                                       │
-     ◀─────────── responds ──────────┘
+                                 window.postMessage('odoo-debug-detected')
+                                      │
+contentScript.js  ◀── message ────────┘
+     │
+     └── chrome.runtime.sendMessage('odooDetected')
+              │
+              ▼
 background.js (service worker)
      │
      ├─ Odoo page without debug=1?
      │       └─▶  chrome.tabs.update → redirect with ?debug=1
      │
      └─ Already in debug?
-             └─▶  Update icon only
+             └─▶  Update icon for this tab only
 ```
+
+`adaptIcon()` is still called on tab switches and window focus changes to keep the icon in sync when moving between tabs, but it is no longer the trigger for auto-debug.
 
 ### Files
 
@@ -84,7 +95,7 @@ When you manually click the extension icon to *disable* debug on a page, auto-de
 
 ## Development notes
 
-- **Update this README** whenever behaviour, files, or the detection flow changes. A note in `manifest.json` (`"_readme"`) serves as a reminder.
+- **Update README.md and CHANGELOG.md** whenever behaviour, files, or the detection flow changes. A note in `manifest.json` (`"_readme"`) serves as a reminder. CHANGELOG.md must be updated for every bug fix.
 - `disabledAutoDebugByTab` is an in-memory Map — not persisted across service worker restarts.
 - `chrome.browserAction` (MV2) vs `chrome.action` (MV3) is handled by the `browserAction` constant in `background.js`.
 - Firefox support uses `firefox_manifest.json` (MV2 with `browser_action`).

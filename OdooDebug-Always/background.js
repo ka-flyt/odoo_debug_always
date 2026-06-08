@@ -109,11 +109,33 @@ const adaptIcon = () => {
                     odooVersion = response.odooVersion;
                     debugMode = response.debugMode;
                 }
-                browserAction.setIcon({ path });
+                browserAction.setIcon({ path, tabId: tabs[0].id });
             });
         }
     });
 }
+
+// Push-based detection: pageScript.js notifies us when Odoo is found on the page.
+// This is the primary trigger for auto-debug. The polling in adaptIcon() is kept
+// as a fallback for tab switches and window focus changes, but auto-debug now
+// relies on this message rather than on the race-prone onUpdated timing.
+chrome.runtime.onMessage.addListener((request, sender) => {
+    if (request.message === 'odooDetected' && sender.tab) {
+        const tab = sender.tab;
+        odooVersion = request.odooVersion;
+        debugMode = request.debugMode;
+        if (request.debugMode !== '1' && request.debugMode !== 'assets') {
+            ensureAutoDebug(tab);
+        }
+        let path = '/images/icons/off_48.png';
+        if (request.debugMode === 'assets') {
+            path = '/images/icons/super_48.png';
+        } else if (request.debugMode === '1') {
+            path = '/images/icons/on_48.png';
+        }
+        browserAction.setIcon({ path, tabId: tab.id });
+    }
+});
 
 browserAction.onClicked.addListener(new onClickListener((tab, click) => onClickActivateDebugMode(tab, click)));
 chrome.tabs.onActivated.addListener(adaptIcon);

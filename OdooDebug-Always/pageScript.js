@@ -17,6 +17,9 @@ const detectOdoo = (retries) => {
         debugMode = debugMode === '0' ? '' : debugMode;  // In Firefox Odoo add '0' for no debug instead of empty string ''.
         body.setAttribute('data-odoo', odooVersion);
         body.setAttribute('data-odoo-debug-mode', debugMode);
+        // Push detection result to contentScript so background.js acts immediately,
+        // instead of relying on the polling adaptIcon() which runs before this point.
+        window.postMessage({ type: 'odoo-debug-detected', odooVersion, debugMode }, '*');
     } else if (retries > 0) {
         setTimeout(() => detectOdoo(retries - 1), 150);
     }
