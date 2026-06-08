@@ -5,6 +5,16 @@
 
 ---
 
+## [5.6] – 2026-06-08
+
+### Fixed
+- **Auto-debug restored for own Odoo backend** — The `session_info` fallback change in 5.5 broke auto-debug because `window.__session_info__` is not available in all Odoo setups. Added URL and DOM fallbacks: when session_info is unavailable, auto-debug triggers if the URL starts with `/web` or `/odoo` (backend routes), or if the backend DOM element `.o_web_client`/`.o_main_navbar` is present. Portal and public pages lack all three, so they remain unaffected.
+
+**Files changed:**
+- `pageScript.js` — added URL heuristic (`/web`, `/odoo` prefix) and DOM heuristic (`.o_web_client`, `.o_main_navbar`) as fallbacks when session_info is unavailable
+
+---
+
 ## [5.5] – 2026-06-08
 
 ### Fixed
