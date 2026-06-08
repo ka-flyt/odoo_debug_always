@@ -3,7 +3,7 @@
     "manifest_version": 3,
     "name": "Odoo Debug - Always",
     "version": "5.4",
-    "description": "Automatically adding debug=1 to any odoo website. Find the latest version here: https://github.com/ka-flyt/odoo_debug_always/",
+    "description": "Automatically adding debug=1 to any odoo website.\nFind the latest version here: https://github.com/ka-flyt/odoo_debug_always/",
     "action": {
         "default_title": "- Click for normal debug \n- Double click for debug with assets",
         "default_icon": {
