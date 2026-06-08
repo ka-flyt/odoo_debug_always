@@ -18,12 +18,15 @@ const detectOdoo = (retries) => {
 
         // Detect whether the current user is an internal Odoo user.
         // window.__session_info__ is server-rendered into the page HTML before any app JS loads.
-        // window.odoo.session_info is a fallback for versions that expose it differently.
-        // Default to true if unavailable (legacy Odoo) to preserve existing auto-debug behaviour.
+        // window.odoo.__session_info__ and window.odoo.session_info are fallbacks for versions
+        // that expose it differently.
+        // For modern Odoo: default to false if unavailable — safer than assuming internal,
+        // prevents auto-debug on portal/public pages where session_info may not be exposed.
         const sessionInfo = window.__session_info__
+            || (window.odoo && window.odoo.__session_info__)
             || (window.odoo && window.odoo.session_info)
             || null;
-        const isInternalUser = sessionInfo ? sessionInfo.is_internal_user === true : true;
+        const isInternalUser = sessionInfo ? sessionInfo.is_internal_user === true : false;
 
         body.setAttribute('data-odoo', odooVersion);
         body.setAttribute('data-odoo-debug-mode', debugMode);

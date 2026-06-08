@@ -5,6 +5,16 @@
 
 ---
 
+## [5.5] – 2026-06-08
+
+### Fixed
+- **Auto-debug no longer triggers on portal/public pages** — The fallback when `session_info` is unavailable was `true`, causing auto-debug to fire on e.g. `odoo.com/my` where portal users are logged in but `window.__session_info__` is not exposed. Fallback changed to `false` for modern Odoo: if user type cannot be determined, do not auto-debug. Manual toggle via icon click still works on any Odoo page regardless of user type. Also added `window.odoo.__session_info__` as an additional detection path.
+
+**Files changed:**
+- `pageScript.js` — fallback for modern Odoo changed from `true` to `false`; added `window.odoo.__session_info__` lookup path
+
+---
+
 ## [5.4] – 2026-06-08
 
 ### Changed
